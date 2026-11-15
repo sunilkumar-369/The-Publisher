@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Zone | 5-Platform Auto Publisher</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --card: rgba(20, 25, 38, 0.88);
+      --border: rgba(0, 240, 255, 0.25);
+      --accent: #00f0ff;
+      --accent-2: #8b5cf6;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0; background: radial-gradient(circle at top, #131b2e, var(--bg) 60%);
+      color: var(--text); min-height: 100vh; padding: 16px; display: flex; justify-content: center;
+    }
+    .container { width: 100%; max-width: 520px; }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding: 12px 16px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(12px);
+    }
+    .brand { font-weight: 800; font-size: 1.15rem; letter-spacing: 0.5px; }
+    .brand span { color: var(--accent); }
+    .btn-icon {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 0.85rem;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      padding: 18px; margin-bottom: 16px; backdrop-filter: blur(12px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+    label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%; background: #0d121d; border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text); padding: 12px; border-radius: 12px; font-size: 0.95rem;
+      margin-bottom: 14px; outline: none; transition: border 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    .platforms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .plat-item {
+      display: flex; align-items: center; gap: 10px; background: #0d121d;
+      padding: 11px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer; user-select: none; font-size: 0.9rem; font-weight: 600;
+    }
+    .plat-item input { accent-color: var(--accent); width: 17px; height: 17px; margin: 0; }
+    .row-btns { display: flex; gap: 10px; margin-bottom: 14px; }
+    .btn-secondary {
+      flex: 1; background: rgba(139, 92, 246, 0.18); border: 1px solid var(--accent-2);
+      color: #ddd6fe; padding: 11px; border-radius: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-primary {
+      width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none; color: #050811; padding: 14px; border-radius: 14px;
+      font-size: 1rem; font-weight: 800; cursor: pointer; letter-spacing: 0.3px;
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-box {
+      display: none; padding: 14px; border-radius: 12px; background: #0d121d;
+      border: 1px solid var(--border); font-size: 0.88rem; line-height: 1.55; margin-top: 14px;
+    }
+    .hidden { display: none; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">EDIT ZONE <span>PUBLISHER</span></div>
+      <button class="btn-icon" onclick="toggleSettings()">⚙️ Setup Keys</button>
+    </div>
+
+    <!-- Local Browser Settings (Saved strictly on your Android device) -->
+    <div id="settingsCard" class="card hidden">
+      <label>GitHub Username</label>
+      <input type="text" id="ghOwner" placeholder="e.g., sunilprakash" />
+      <label>Repository Name</label>
+      <input type="text" id="ghRepo" value="edit-zone-publisher" />
+      <label>GitHub Fine-Grained Token (Actions: Read & Write)</label>
+      <input type="password" id="ghToken" placeholder="github_pat_..." />
+      <label>Gemini API Key (Optional - for live caption preview)</label>
+      <input type="password" id="geminiKey" placeholder="AIzaSy..." />
+      <button class="btn-primary" onclick="saveSettings()">Save Device Config</button>
+    </div>
+
+    <!-- Main Upload Controller -->
+    <div class="card">
+      <label>1. Google Drive Video Link or File ID (MP4, 9:16, &lt;60s)</label>
+      <input type="text" id="driveUrl" placeholder="Paste Google Drive share link or File ID..." />
+
+      <label>2. Video Topic / Hook (Used for Title & Gemini AI)</label>
+      <input type="text" id="videoTopic" placeholder="e.g., 3 AI Prompts That Make Reels Go Viral" />
+
+      <label>3. Caption & Hashtags (Leave blank to auto-generate via Gemini)</label>
+      <textarea id="customCaption" rows="4" placeholder="Optional custom caption..."></textarea>
+
+      <div class="row-btns">
+        <button class="btn-secondary" onclick="previewGemini()">✨ Generate AI Caption</button>
+      </div>
+
+      <label>4. Target Platforms (Simultaneous Publish)</label>
+      <div class="platforms">
+        <label class="plat-item"><input type="checkbox" value="youtube" checked /> YouTube Shorts</label>
+        <label class="plat-item"><input type="checkbox" value="instagram" checked /> Instagram Reels</label>
+        <label class="plat-item"><input type="checkbox" value="facebook" checked /> Facebook Reels</label>
+        <label class="plat-item"><input type="checkbox" value="linkedin" checked /> LinkedIn Video</label>
+        <label class="plat-item"><input type="checkbox" value="x" checked /> X (Twitter)</label>
+      </div>
+
+      <button id="publishBtn" class="btn-primary" onclick="triggerPublish()">🚀 Publish to All Selected Platforms</button>
+      <div id="statusBox" class="status-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const fields = ['ghOwner', 'ghRepo', 'ghToken', 'geminiKey'];
+    window.onload = () => {
+      fields.forEach(id => {
+        const val = localStorage.getItem(id);
+        if (val) document.getElementById(id).value = val;
+      });
+      if (!localStorage.getItem('ghToken')) document.getElementById('settingsCard').classList.remove('hidden');
+    };
+
+    function toggleSettings() {
+      document.getElementById('settingsCard').classList.toggle('hidden');
+    }
+
+    function saveSettings() {
+      fields.forEach(id => localStorage.setItem(id, document.getElementById(id).value.trim()));
+      alert('Saved locally on this device!');
+      toggleSettings();
+    }
+
+    function extractDriveId(input) {
+      const match = input.match(/[-\w]{25,}/);
+      return match ? match[0] : input.trim();
+    }
+
+    async function previewGemini() {
+      const apiKey = localStorage.getItem('geminiKey');
+      const topic = document.getElementById('videoTopic').value.trim();
+      if (!apiKey) return alert('Add your free Google AI Studio Gemini key in Setup Keys first.');
+      if (!topic) return alert('Enter a Video Topic first.');
+
+      const box = document.getElementById('customCaption');
+      box.value = 'Generating viral hook & hashtags with Gemini...';
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `Write a high-retention short-form video caption for Edit Zone Team about: "${topic}". Include a 1-line curiosity hook, 2 short value bullets, a CTA ("Comment PROMPT for the workflow"), and 5 relevant hashtags. Keep under 240 characters so it fits X, Reels, Shorts, and LinkedIn cleanly.` }] }]
+          })
+        });
+        const data = await res.json();
+        box.value = data.candidates[0].content.parts[0].text.trim();
+      } catch (e) {
+        box.value = '';
+        alert('Gemini preview error: ' + e.message);
+      }
+    }
+
+    async function triggerPublish() {
+      const owner = localStorage.getItem('ghOwner');
+      const repo = localStorage.getItem('ghRepo');
+      const token = localStorage.getItem('ghToken');
+      if (!owner || !repo || !token) return alert('Please configure GitHub details in Setup Keys.');
+
+      const fileId = extractDriveId(document.getElementById('driveUrl').value);
+      const topic = document.getElementById('videoTopic').value.trim();
+      const caption = document.getElementById('customCaption').value.trim();
+      const platforms = Array.from(document.querySelectorAll('.platforms input:checked')).map(el => el.value).join(',');
+
+      if (!fileId || !topic || !platforms) return alert('Enter Drive link, Topic, and at least 1 platform.');
+
+      const btn = document.getElementById('publishBtn');
+      const statusBox = document.getElementById('statusBox');
+      btn.disabled = true;
+      statusBox.style.display = 'block';
+      statusBox.innerHTML = '⏳ Dispatching cloud workflow to GitHub Actions...';
+
+      try {
+        const dispatchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/publish.yml/dispatches`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { drive_file_id: fileId, topic: topic, caption: caption, platforms: platforms }
+          })
+        });
+
+        if (!dispatchRes.ok) throw new Error(`GitHub API ${dispatchRes.status}: Check token permissions & branch name (main).`);
+        statusBox.innerHTML = '✅ Workflow triggered! Waiting for cloud runner to start...';
+        setTimeout(() => pollRunStatus(owner, repo, token), 4000);
+      } catch (err) {
+        statusBox.innerHTML = `❌ Error: ${err.message}`;
+        btn.disabled = false;
+      }
+    }
+
+    async function pollRunStatus(owner, repo, token) {
+      const statusBox = document.getElementById('statusBox');
+      const btn = document.getElementById('publishBtn');
+      const interval = setInterval(async () => {
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs?event=workflow_dispatch&per_page=1`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+        });
+        const data = await res.json();
+        const run = data.workflow_runs && data.workflow_runs[0];
+        if (!run) return;
+
+        if (run.status !== 'completed') {
+          statusBox.innerHTML = `🔄 Cloud Status: <b>${run.status.toUpperCase()}</b>...<br><a href="${run.html_url}" target="_blank">View Live Terminal Logs</a>`;
+        } else {
+          clearInterval(interval);
+          btn.disabled = false;
+          const ok = run.conclusion === 'success';
+          statusBox.innerHTML = ok
+            ? `🎉 <b>Published across all selected platforms!</b><br><a href="${run.html_url}" target="_blank">View Upload Report</a>`
+            : `⚠️ <b>Finished with warnings/errors (${run.conclusion}).</b><br><a href="${run.html_url}" target="_blank">Check Logs</a>`;
+        }
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
